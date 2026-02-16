@@ -2,7 +2,7 @@ import datetime
 
 from fastapi import APIRouter, HTTPException
 from models import InteractionRequest, AgentResponse
-from engine import get_ai_decision
+from engine_gigachat import get_ai_decision
 
 event_log = [
     {"time": "00:00:00", "source": "Система", "text": "Симуляция запущена"}
