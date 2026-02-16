@@ -1,37 +1,9 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 
-const RelationshipGraph = ({ agents }) => {
-    // useMemo нужен, чтобы граф не перерисовывался при каждом движении мышки,
-    // а только когда меняются данные об агентах
-    const graphData = useMemo(() => {
-        const nodes = Object.values(agents).map(a => ({
-            id: a.id,
-            name: a.name,
-            val: 10 // размер узла
-        }));
-
-        const links = [];
-        Object.values(agents).forEach(agent => {
-            if (agent.relationships) {
-                Object.entries(agent.relationships).forEach(([targetId, value]) => {
-                    // Рисуем связи только между агентами (игнорируем user для графа)
-                    if (targetId !== 'user' && agents[targetId]) {
-                        links.push({
-                            source: agent.id,
-                            target: targetId,
-                            value: value,
-                            // Чем сильнее чувства (в любую сторону), тем толще линия
-                            width: Math.abs(value) + 1,
-                            color: value >= 0 ? '#4ade80' : '#f87171'
-                        });
-                    }
-                });
-            }
-        });
-
-        return { nodes, links };
-    }, [agents]);
+const RelationshipGraph = ({ data }) => {
+    // Если данных еще нет, показываем заглушку
+    if (!data || !data.nodes) return <div style={{color: '#555', padding: '20px'}}>Загрузка графа...</div>;
 
     return (
         <div style={{
@@ -41,14 +13,15 @@ const RelationshipGraph = ({ agents }) => {
             border: '1px solid #333'
         }}>
             <ForceGraph2D
-                graphData={graphData}
-                width={450}
-                height={400}
+                graphData={data} // Используем готовые данные с бэкенда
+                width={480}
+                height={320}
                 nodeLabel="name"
-                nodeColor={() => '#3b82f6'}
-                linkColor={link => link.color}
-                linkWidth={link => link.width}
+                nodeColor={node => node.color || '#3b82f6'}
+                linkColor={link => link.value >= 0 ? '#4ade80' : '#f87171'}
+                linkWidth={link => Math.abs(link.value) * 3 + 1}
                 linkDirectionalParticles={2}
+                // Частицы бегут быстрее, если отношения сильные
                 linkDirectionalParticleSpeed={d => Math.abs(d.value) * 0.01}
                 backgroundColor="#000000"
             />
