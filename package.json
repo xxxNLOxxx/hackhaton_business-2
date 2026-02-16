@@ -12,7 +12,9 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-force-graph": "^1.48.2",
+    "react-force-graph-2d": "^1.29.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
