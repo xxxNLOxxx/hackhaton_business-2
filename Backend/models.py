@@ -7,8 +7,10 @@ class InteractionRequest(BaseModel):
 
 class AgentResponse(BaseModel):
     thought: str
+    internal_monologue: str
     goal: str
     message: str
     new_mood: float
     action: str
     rel_change: float
+    style_suffix: str
