@@ -37,9 +37,9 @@ def get_mood_description(mood):
     if mood < -0.2: return "подавленное, мрачное"
     return "нейтральное"
 
-def get_ai_decision(agent_data, event):
+def get_ai_decision(agent_data, event, memory_context=""):
     mood_str = get_mood_description(agent_data['mood'])
-    # Работа с историей (памятью) остается прежней
+    # Работа с историей (памятью)
     memories = "\n".join(agent_data['history'][-7:]) if agent_data['history'] else "Память пуста."
 
     prompt = f"""
