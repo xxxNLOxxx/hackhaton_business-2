@@ -2,11 +2,16 @@ import json
 import os
 from gigachat import GigaChat
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+# Явно указываем путь к .env файлу
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
-
-giga_key = os.getenv("GIGACHAT")
+# Проверяем, что ключ загрузился (для отладки)
+giga_key = os.getenv("GIGACHAT_CREDENTIALS")
+print(f"Ключ загружен: {'да' if giga_key else 'нет'}")  # Добавьте для проверки
+print(f"Длина ключа: {len(giga_key) if giga_key else 0}")  # И это
 
 SYSTEM_INSTRUCTION = """
 Ты — AI-агент в симуляции. Твой цикл работы: 1. Рефлексия, 2. Цель, 3. Действие.
