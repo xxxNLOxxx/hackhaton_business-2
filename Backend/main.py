@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api import router, event_log, agents, interact, user_manager
+from api import router, event_log, agents, interact
 from models import InteractionRequest
 
 # ---------------------- ТЕСТОВЫЕ ПОЛЬЗОВАТЕЛИ ----------------------
