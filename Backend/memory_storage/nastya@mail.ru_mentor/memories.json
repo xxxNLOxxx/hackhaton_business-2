@@ -326,5 +326,21 @@
     "emotion": "neutral",
     "importance": 0.5,
     "metadata": {}
+  },
+  {
+    "id": "dd2319df",
+    "timestamp": "2026-02-17T20:42:13.112177",
+    "text": "Событие: Hello Mentor! It's great to see you again. How can I learn or grow today? | Ответ: Приветствую тебя, Alice! Очень приятно снова видеться. Расскажи подробнее о том, что именно ты хочешь узнать или развить в себе сегодня?",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "26092008",
+    "timestamp": "2026-02-17T20:43:05.155144",
+    "text": "Событие: Ты видишь Critic | Ответ: Hello Critic! Nice to see you again. What can I do for you today?",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
   }
 ]

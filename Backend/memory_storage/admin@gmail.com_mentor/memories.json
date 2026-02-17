@@ -22,5 +22,29 @@
     "emotion": "neutral",
     "importance": 0.5,
     "metadata": {}
+  },
+  {
+    "id": "4e233451",
+    "timestamp": "2026-02-17T20:39:28.097065",
+    "text": "Событие: Ты видишь Critic | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "86f48fcc",
+    "timestamp": "2026-02-17T20:40:03.176423",
+    "text": "Событие: Погас свет. | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "330d2214",
+    "timestamp": "2026-02-17T20:41:02.200174",
+    "text": "Событие: Ты видишь Critic | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
   }
 ]

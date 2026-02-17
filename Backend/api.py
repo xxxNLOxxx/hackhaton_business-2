@@ -194,6 +194,7 @@ def inject_event(event: str, email: str = Header(...)):
     if not user_manager.get_user_by_email(email):
         raise HTTPException(401, "Unauthorized")
 
+    # Добавляем событие в глобальный лог
     event_log.append({
         "time": datetime.datetime.now().strftime("%H:%M:%S"),
         "type": "world",
@@ -203,7 +204,17 @@ def inject_event(event: str, email: str = Header(...)):
         "owner_email": email
     })
 
+    # Пробегаем всех агентов и добавляем событие в их историю
+    for agent in agent_manager.agents.values():
+        # можно ограничить только своими агентами или всеми
+        agent["history"].append(event)
+        agent["history"] = agent["history"][-20:]  # сохраняем только последние 20
+
+    # Сохраняем изменения
+    agent_manager._save_agents()
+
     return {"status": "ok"}
+
 
 
 @router.get("/me/events")

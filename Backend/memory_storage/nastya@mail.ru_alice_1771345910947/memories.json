@@ -70,5 +70,13 @@
     "emotion": "neutral",
     "importance": 0.5,
     "metadata": {}
+  },
+  {
+    "id": "18c1984f",
+    "timestamp": "2026-02-17T20:42:08.639227",
+    "text": "Событие: Ты видишь Mentor | Ответ: Hello Mentor! It's great to see you again. How can I learn or grow today?",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
   }
 ]

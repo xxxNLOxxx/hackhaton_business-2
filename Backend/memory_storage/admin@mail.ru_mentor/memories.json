@@ -62,5 +62,21 @@
     "emotion": "neutral",
     "importance": 0.5,
     "metadata": {}
+  },
+  {
+    "id": "a188dc57",
+    "timestamp": "2026-02-17T20:40:35.181793",
+    "text": "Событие: Ты видишь Critic | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "a2790107",
+    "timestamp": "2026-02-17T20:43:29.112557",
+    "text": "Событие: Система шумит. | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
   }
 ]
