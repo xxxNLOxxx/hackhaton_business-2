@@ -21,9 +21,11 @@ async def autonomous_life_cycle():
         await asyncio.sleep(random.randint(20, 40))
 
         users = {}
-        for a in agents.values():
+        # ✅ исправлено: берем всех агентов из agent_manager
+        for a in agent_manager.agents.values():
             users.setdefault(a["owner_email"], []).append(a)
 
+        # фильтруем владельцев, у которых >= 2 агента
         users = {k: v for k, v in users.items() if len(v) >= 2}
         if not users:
             continue
@@ -38,7 +40,8 @@ async def autonomous_life_cycle():
                 "type": "world",
                 "actor": "environment",
                 "text": event,
-                "mood": 0
+                "mood": 0,
+                "owner_email": email
             })
             handle_interaction(actor["id"], InteractionRequest(event=event, initiator_id="environment"), email)
         else:

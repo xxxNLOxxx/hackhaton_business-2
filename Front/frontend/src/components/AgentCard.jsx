@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, Zap, ChevronDown, ChevronUp, Brain, Target, Activity } from 'lucide-react';
 
-const AgentCard = ({ id, agent, onInteract }) => {
+const AgentCard = ({ id, agent, onInteract, onDelete, onEdit }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     
@@ -24,17 +24,13 @@ const AgentCard = ({ id, agent, onInteract }) => {
         height: 'fit-content',
         minWidth: '320px',
         position: 'relative',
-        overflow: 'visible', // Важно: разрешаем свечению выходить за границы
+        overflow: 'visible',
         marginBottom: '15px',
         border: `1px solid ${isHovered || isExpanded ? agentColor + 'aa' : 'rgba(255,255,255,0.1)'}`,
-        
-        // ДИНАМИЧЕСКИЙ СЛОЙ: если открыта или наведен курсор — она сверху
         zIndex: isExpanded || isHovered ? 100 : 1,
-        
         boxShadow: isExpanded || isHovered 
             ? `0 20px 50px rgba(0,0,0,0.6), 0 0 20px ${agentColor}44` 
             : `0 8px 32px rgba(0,0,0,0.4)`,
-        
         transform: isHovered ? 'translateY(-5px) scale(1.01)' : 'translateY(0) scale(1)',
     };
 
@@ -54,7 +50,6 @@ const AgentCard = ({ id, agent, onInteract }) => {
             onMouseLeave={() => setIsHovered(false)}
             style={cardStyle}
         >
-            {/* Яркое пятно света под карточкой при наведении или открытии */}
             {(isHovered || isExpanded) && (
                 <div style={{
                     position: 'absolute',
@@ -85,19 +80,6 @@ const AgentCard = ({ id, agent, onInteract }) => {
                             <span style={{ fontSize: '10px', color: '#555', fontWeight: 'bold' }}>{id.toUpperCase()}</span>
                         </div>
                     </div>
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                    <div style={{ width: '60px', height: '4px', background: '#111', borderRadius: '10px' }}>
-                        <div style={{ 
-                            width: `${moodPercent}%`, 
-                            height: '100%', 
-                            background: moodColor, 
-                            boxShadow: `0 0 10px ${moodColor}`,
-                            transition: 'width 0.5s ease' 
-                        }} />
-                    </div>
-                    {isExpanded ? <ChevronUp size={20} color={agentColor} /> : <ChevronDown size={20} color="#444" />}
                 </div>
             </div>
 
@@ -158,6 +140,47 @@ const AgentCard = ({ id, agent, onInteract }) => {
                 >
                     <Zap size={16} fill="#fff" />
                     Initialize interaction
+                </button>
+
+                {/* Кнопки управления агентом */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(id); }}
+                    style={{
+                        width: '100%',
+                        padding: '10px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        background: '#ef4444',
+                        color: '#fff',
+                        fontWeight: '800',
+                        marginTop: '10px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                    }}
+                >
+                    Удалить агента
+                </button>
+
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        const newName = prompt("Введите новое имя агента:", agent.name);
+                        if (newName) onEdit({ name: newName });
+                    }}
+                    style={{
+                        width: '100%',
+                        padding: '10px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        background: '#3b82f6',
+                        color: '#fff',
+                        fontWeight: '800',
+                        marginTop: '10px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                    }}
+                >
+                    Изменить агента
                 </button>
             </div>
         </div>

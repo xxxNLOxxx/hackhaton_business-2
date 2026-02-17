@@ -1,7 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
 from uuid import uuid4
-
+from pydantic import BaseModel
+from typing import Optional
 
 class InteractionRequest(BaseModel):
     event: str
@@ -31,8 +32,20 @@ class User(BaseModel):
     id: str = None
     email: EmailStr
     password: str
+    role: str = "user"
 
     def __init__(self, **data):
         super().__init__(**data)
         if not self.id:
             self.id = str(uuid4())
+class UpdateUserRequest(BaseModel):
+    role: Optional[str] = None
+    password: Optional[str] = None
+
+
+class UpdateAgentRequest(BaseModel):
+    name: Optional[str] = None
+    bio: Optional[str] = None
+    mood: Optional[float] = None
+    color: Optional[str] = None
+    current_goal: Optional[str] = None

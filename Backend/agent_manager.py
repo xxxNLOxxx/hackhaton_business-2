@@ -1,4 +1,3 @@
-# agent_manager.py
 import json
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -39,3 +38,15 @@ class AgentManager:
 
     def get_agents_by_owner(self, owner_email: str) -> List[Dict]:
         return [a for a in self.agents.values() if a["owner_email"] == owner_email]
+
+    def delete_agent(self, agent_id: str):
+        if agent_id in self.agents:
+            del self.agents[agent_id]
+            self._save_agents()
+
+    def delete_agents_by_owner(self, owner_email: str):
+        """Удаляет всех агентов пользователя (для админки)"""
+        to_delete = [aid for aid, a in self.agents.items() if a["owner_email"] == owner_email]
+        for aid in to_delete:
+            del self.agents[aid]
+        self._save_agents()

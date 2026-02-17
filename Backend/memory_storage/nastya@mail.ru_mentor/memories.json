@@ -254,5 +254,77 @@
     "emotion": "neutral",
     "importance": 0.5,
     "metadata": {}
+  },
+  {
+    "id": "286bd949",
+    "timestamp": "2026-02-17T20:05:54.051685",
+    "text": "Событие: Hello Mentor! It's so nice to see you again. How are you today? | Ответ: Приветствую тебя! Рад снова видеть тебя. Как твои дела сегодня?",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "64e16b93",
+    "timestamp": "2026-02-17T20:06:57.165051",
+    "text": "Событие: Мне нужно время, чтобы разобраться. | Ответ: Мне нужно время, чтобы разобраться.",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "a8c53119",
+    "timestamp": "2026-02-17T20:07:24.735336",
+    "text": "Событие: Здравствуйте, Mentor. Рад Вас видеть. Есть ли какие-либо задачи или вопросы, которые Вы хотели бы обсудить сегодня? | Ответ: Приветствую! Рад снова вас видеть. Если у вас есть вопросы или задачи для обсуждения, я здесь, чтобы помочь.",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "28b76941",
+    "timestamp": "2026-02-17T20:08:03.747725",
+    "text": "Событие: Система шумит. | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "78849a0f",
+    "timestamp": "2026-02-17T20:11:08.703519",
+    "text": "Событие: Ты видишь Alice | Ответ: Мне нужно время, чтобы разобраться.",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "ed959846",
+    "timestamp": "2026-02-17T20:18:51.683177",
+    "text": "Событие: Ты видишь Alice | Ответ: Hello Alice! Nice to see you here. What brings you to this place?",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "90fbe184",
+    "timestamp": "2026-02-17T20:20:43.296966",
+    "text": "Событие: Ты видишь Critic | Ответ: Приветствую вас, Critic и Alice. Рад снова видеть вас обоих. Как у вас дела? Надеюсь, вы здесь не только для того, чтобы критиковать мою работу.",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "79feafd4",
+    "timestamp": "2026-02-17T20:21:19.927764",
+    "text": "Событие: Ты видишь Critic | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "20b1a1d5",
+    "timestamp": "2026-02-17T20:32:05.899470",
+    "text": "Событие: Система шумит. | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
   }
 ]

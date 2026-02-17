@@ -87,6 +87,15 @@ def handle_interaction(agent_id: str, req: InteractionRequest, email: str) -> Ag
     agent_manager.update_agent(agent_id, **agent)
 
     return data
+def ensure_user(email: str):
+    if not user_manager.get_user_by_email(email):
+        raise HTTPException(401, "Unauthorized")
+
+
+def ensure_admin(email: str):
+    user = user_manager.get_user_by_email(email)
+    if not user or user.role != "admin":
+        raise HTTPException(403, "Admin only")
 
 # ------------------ API ------------------
 
@@ -223,3 +232,72 @@ def get_graph(email: str = Header(...)):
                 })
 
     return {"nodes": nodes, "links": links}
+@router.get("/admin/users")
+def admin_get_users(email: str = Header(...)):
+    ensure_admin(email)
+    return [
+        {
+            "email": u.email,
+            "role": u.role
+        }
+        for u in user_manager.users.values()
+    ]
+
+class UpdateUserRequest(BaseModel):
+    role: str | None = None
+    password: str | None = None
+
+
+@router.put("/admin/users/{user_email}")
+def admin_update_user(
+    user_email: str,
+    req: UpdateUserRequest,
+    email: str = Header(...)
+):
+    ensure_admin(email)
+    user_manager.update_user(
+        user_email,
+        role=req.role,
+        password=req.password
+    )
+    return {"status": "ok"}
+@router.delete("/admin/users/{user_email}")
+def admin_delete_user(user_email: str, email: str = Header(...)):
+    ensure_admin(email)
+
+    agent_manager.delete_agents_by_owner(user_email)
+    user_manager.delete_user(user_email)
+
+    return {"status": "deleted"}
+class UpdateAgentRequest(BaseModel):
+    name: str | None = None
+    bio: str | None = None
+    mood: float | None = None
+    color: str | None = None
+    current_goal: str | None = None
+
+
+@router.put("/me/agents/{agent_id}")
+def update_my_agent(
+    agent_id: str,
+    req: UpdateAgentRequest,
+    email: str = Header(...)
+):
+    ensure_user(email)
+    agent = agent_manager.get_agent(agent_id)
+
+    if not agent or agent["owner_email"] != email:
+        raise HTTPException(403, "Forbidden")
+
+    agent_manager.update_agent(agent_id, **req.dict(exclude_none=True))
+    return {"status": "ok"}
+@router.delete("/me/agents/{agent_id}")
+def delete_my_agent(agent_id: str, email: str = Header(...)):
+    ensure_user(email)
+    agent = agent_manager.get_agent(agent_id)
+
+    if not agent or agent["owner_email"] != email:
+        raise HTTPException(403, "Forbidden")
+
+    agent_manager.delete_agent(agent_id)
+    return {"status": "deleted"}

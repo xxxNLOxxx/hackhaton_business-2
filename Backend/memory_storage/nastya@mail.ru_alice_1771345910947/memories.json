@@ -1,0 +1,74 @@
+[
+  {
+    "id": "61016b2e",
+    "timestamp": "2026-02-17T20:05:17.765214",
+    "text": "Событие: Ты видишь Critic | Ответ: Приветствую вас! Надеюсь, у вас есть что-то конструктивное, чтобы обсудить.",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "d03d9d80",
+    "timestamp": "2026-02-17T20:05:50.936239",
+    "text": "Событие: Ты видишь Mentor | Ответ: Hello Mentor! It's so nice to see you again. How are you today?",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "2c3ff6b4",
+    "timestamp": "2026-02-17T20:08:59.479314",
+    "text": "Событие: Ты видишь Mentor | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "c295bf7f",
+    "timestamp": "2026-02-17T20:09:43.322784",
+    "text": "Событие: Ты видишь Critic | Ответ: Приветствую тебя, Critic. Надеюсь, у нас будет конструктивный диалог.",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "18cd1a93",
+    "timestamp": "2026-02-17T20:11:22.769211",
+    "text": "Событие: Мне нужно время, чтобы разобраться. | Ответ: Мне нужно время, чтобы разобраться.",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "67013387",
+    "timestamp": "2026-02-17T20:13:03.065712",
+    "text": "Событие: Ты видишь Critic | Ответ: Мне нужно время, чтобы разобраться.",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "0982ea21",
+    "timestamp": "2026-02-17T20:13:48.889446",
+    "text": "Событие: Ты видишь Critic | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "ef744b28",
+    "timestamp": "2026-02-17T20:18:24.136158",
+    "text": "Событие: Ты видишь Critic | Ответ: Hello Critic, it's great to see you! How can I assist you today?",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "5ad5b863",
+    "timestamp": "2026-02-17T20:18:54.926548",
+    "text": "Событие: Hello Alice! Nice to see you here. What brings you to this place? | Ответ: Привет, Alice! Как приятно снова встретиться. Расскажите, почему вы оказались в этом месте?",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  }
+]
