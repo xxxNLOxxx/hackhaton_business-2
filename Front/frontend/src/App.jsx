@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import CreateAgentForm from './components/CreateAgentForm';
 import AgentCard from './components/AgentCard'
 import RelationshipGraph from './components/RelationshipGraph'
 import { Clock, Activity, Zap } from 'lucide-react' // Добавил Zap для "вмешательства"
@@ -68,6 +69,7 @@ function App() {
             flexDirection: 'column',
             overflow: 'hidden'
         }}>
+           
             {/* ВЕРХНЯЯ ПАНЕЛЬ */}
             <header style={{
                 height: '70px',
