@@ -1,62 +1,89 @@
 import json
 import os
+from pathlib import Path
+from typing import Dict, Any
+
 from gigachat import GigaChat
 from dotenv import load_dotenv
-from pathlib import Path
 
-# Явно указываем путь к .env файлу
-env_path = Path(__file__).parent / '.env'
+# ---------------------- ENV ----------------------
+env_path = Path(__file__).parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-# Проверяем, что ключ загрузился (для отладки)
-giga_key = os.getenv("GIGACHAT_CREDENTIALS")
-print(f"Ключ загружен: {'да' if giga_key else 'нет'}")  # Добавьте для проверки
-print(f"Длина ключа: {len(giga_key) if giga_key else 0}")  # И это
+GIGACHAT_CREDENTIALS = os.getenv("GIGACHAT_CREDENTIALS")
+if not GIGACHAT_CREDENTIALS:
+    raise RuntimeError("GIGACHAT_CREDENTIALS не найден в .env")
 
+# ---------------------- SYSTEM PROMPT ----------------------
 SYSTEM_INSTRUCTION = """
-Ты — AI-агент в сложном социальном симуляторе.
-Твой цикл: 1. Рефлексия (анализ ситуации), 2. Внутренний монолог (что ты думаешь о других), 3. Цель, 4. Действие.
-
-Отвечай СТРОГО JSON-объектом:
+Ты — автономный AI-агент в социальной симуляции.
+Ты ОБЯЗАН отвечать СТРОГО валидным JSON без markdown и пояснений.
+Формат:
 {
-  "thought": "анализ ситуации",
-  "internal_monologue": "твое реальное отношение к собеседнику сейчас",
-  "goal": "чего хочешь добиться",
-  "message": "реплика (согласно твоему настроению)",
+  "thought": "...",
+  "internal_monologue": "...",
+  "goal": "...",
+  "message": "...",
   "new_mood": число от -1.0 до 1.0,
-  "action": "краткое описание действия",
-  "rel_change": число изменения отношений,
-  "style_suffix": "описание тона (н-р: агрессивно, шепотом)"
+  "action": "...",
+  "rel_change": число от -1.0 до 1.0,
+  "style_suffix": "..."
 }
 """
 
-def get_mood_description(mood):
-    if mood > 0.6: return "восторженное, крайне дружелюбное"
-    if mood > 0.2: return "хорошее, спокойное"
-    if mood < -0.6: return "агрессивное, раздраженное"
-    if mood < -0.2: return "подавленное, мрачное"
-    return "нейтральное"
+# ---------------------- HELPERS ----------------------
+def clamp(value: float, min_v=-1.0, max_v=1.0) -> float:
+    return round(max(min_v, min(max_v, value)), 2)
 
-def get_ai_decision(agent_data, event, memory_context=""):
-    mood_str = get_mood_description(agent_data['mood'])
-    # Работа с историей (памятью)
-    memories = "\n".join(agent_data['history'][-7:]) if agent_data['history'] else "Память пуста."
+
+def extract_json(text: str) -> Dict[str, Any]:
+    try:
+        cleaned = text.replace("```json", "").replace("```", "").strip()
+        start = cleaned.find("{")
+        end = cleaned.rfind("}") + 1
+        if start == -1 or end == -1:
+            raise ValueError("JSON не найден")
+        return json.loads(cleaned[start:end])
+    except Exception:
+        return {}
+
+
+def fallback_response() -> Dict[str, Any]:
+    return {
+        "thought": "Ошибка обработки",
+        "internal_monologue": "Лучше ничего не предпринимать",
+        "goal": "Стабильность",
+        "message": "Мне нужно время, чтобы разобраться.",
+        "new_mood": 0.0,
+        "action": "ожидание",
+        "rel_change": 0.0,
+        "style_suffix": "нейтрально"
+    }
+
+# ---------------------- MAIN ----------------------
+def get_ai_decision(agent_data: Dict[str, Any], event: str) -> Dict[str, Any]:
+    relationships = ", ".join(f"{k}:{v}" for k, v in agent_data["relationships"].items()) or "нет"
+    memories = "\n".join(agent_data["history"][-7:]) or "память пуста"
 
     prompt = f"""
-    Твоя личность: {agent_data['bio']}
-    Твое текущее состояние: {mood_str} (индекс: {agent_data['mood']})
-    Твои отношения (симпатия от -1 до 1): {agent_data['relationships']}
-    Последние события:
-    {memories}
+Личность:
+{agent_data['bio']}
 
-    НОВОЕ СОБЫТИЕ: {event}
-    
-    Важно: Твое настроение {mood_str} должно ПРЯМО влиять на текст в "message".
-    """
+Настроение:
+{agent_data['mood']}
 
-    # Используем контекстный менеджер для работы с API
-    with GigaChat(credentials=giga_key, verify_ssl_certs=False) as giga:
-        try:
+Отношения:
+{relationships}
+
+Воспоминания:
+{memories}
+
+СОБЫТИЕ:
+{event}
+"""
+
+    try:
+        with GigaChat(credentials=GIGACHAT_CREDENTIALS, verify_ssl_certs=False) as giga:
             response = giga.chat({
                 "messages": [
                     {"role": "system", "content": SYSTEM_INSTRUCTION},
@@ -64,27 +91,20 @@ def get_ai_decision(agent_data, event, memory_context=""):
                 ],
                 "temperature": 0.7
             })
+            content = getattr(response.choices[0].message, "content", "")
+            data = extract_json(content)
 
-            raw_text = response.choices[0].message.content
-
-            # Чистим JSON (GigaChat иногда оборачивает его в кавычки)
-            clean_text = raw_text.replace("```json", "").replace("```", "").strip()
-
-            # Поиск границ JSON
-            start = clean_text.find('{')
-            end = clean_text.rfind('}') + 1
-            if start != -1:
-                return json.loads(clean_text[start:end])
-
-            raise ValueError("JSON not found in response")
-
-        except Exception as e:
-            print(f"Ошибка GigaChat: {e}")
             return {
-                "thought": "Сбой связи с инфополем.",
-                "goal": "ожидание",
-                "message": "Я... что-то связь барахлит.",
-                "new_mood": agent_data['mood'],
-                "action": "замер",
-                "rel_change": 0
+                "thought": data.get("thought", ""),
+                "internal_monologue": data.get("internal_monologue", ""),
+                "goal": data.get("goal", "наблюдение"),
+                "message": data.get("message", ""),
+                "new_mood": clamp(float(data.get("new_mood", 0.0))),
+                "action": data.get("action", "ожидание"),
+                "rel_change": clamp(float(data.get("rel_change", 0.0))),
+                "style_suffix": data.get("style_suffix", "нейтрально")
             }
+
+    except Exception as e:
+        print("[GIGACHAT ERROR]", e)
+        return fallback_response()
