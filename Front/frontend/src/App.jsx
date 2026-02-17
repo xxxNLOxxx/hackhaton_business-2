@@ -4,6 +4,7 @@ import CreateAgentForm from './components/CreateAgentFrom';
 import AgentCard from './components/AgentCard'
 import RelationshipGraph from './components/RelationshipGraph'
 import { Clock, Activity, Zap, Terminal, Users, Shield } from 'lucide-react'
+import Auth from './components/Auth';
 
 const API_URL = "http://127.0.0.1:8000"
 
@@ -11,7 +12,10 @@ function App() {
     const [agents, setAgents] = useState({})
     const [events, setEvents] = useState([])
     const [graphData, setGraphData] = useState({ nodes: [], links: [] })
-
+    const [user, setUser] = useState(localStorage.getItem('userEmail'));
+    if (!user) {
+    return <Auth onLogin={(email) => setUser(email)} />;
+    } 
     const loadData = async () => {
         try {
             const [agentsRes, eventsRes, graphRes] = await Promise.all([

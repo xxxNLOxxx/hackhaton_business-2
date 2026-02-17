@@ -12,8 +12,8 @@ const CreateAgentForm = ({ onCreated }) => {
   const createAgent = async () => {
     if (!name.trim()) return;
     const id = name.toLowerCase().replace(/\s+/g, '_');
-
-    await fetch('http://localhost:8000/agents?email=test@test.ru', {
+    const userEmail = localStorage.getItem('userEmail') || 'test@test.ru';
+    await fetch(`http://localhost:8000/agents?email=${userEmail}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
