@@ -1,0 +1,39 @@
+{
+  "nastya@mail.ru_mentor": {
+    "id": "nastya@mail.ru_mentor",
+    "name": "Mentor",
+    "bio": "Системный агент",
+    "mood": 0.0,
+    "color": "#888888",
+    "relationships": {
+      "nastya@mail.ru_critic": 0.0
+    },
+    "history": [],
+    "current_goal": "Инициализация",
+    "owner_email": "nastya@mail.ru"
+  },
+  "nastya@mail.ru_critic": {
+    "id": "nastya@mail.ru_critic",
+    "name": "Critic",
+    "bio": "Системный агент",
+    "mood": 0.0,
+    "color": "#888888",
+    "relationships": {
+      "nastya@mail.ru_mentor": 0.0
+    },
+    "history": [],
+    "current_goal": "Инициализация",
+    "owner_email": "nastya@mail.ru"
+  },
+  "nastya@mail.ru_alice_1771345910947": {
+    "id": "nastya@mail.ru_alice_1771345910947",
+    "name": "Alice",
+    "bio": "Happy and peaceful",
+    "mood": 0.6,
+    "color": "#13241f",
+    "relationships": {},
+    "history": [],
+    "current_goal": "Инициализация",
+    "owner_email": "nastya@mail.ru"
+  }
+}

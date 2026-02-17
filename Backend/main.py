@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from api import router, agents, event_log, handle_interaction
+from api import router, event_log, handle_interaction, agent_manager
 from models import InteractionRequest
 
 RANDOM_WORLD_EVENTS = [

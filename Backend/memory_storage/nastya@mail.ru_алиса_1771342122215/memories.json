@@ -1,0 +1,34 @@
+[
+  {
+    "id": "1feac909",
+    "timestamp": "2026-02-17T18:28:58.771813",
+    "text": "Событие: Погас свет. | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "6ddeb875",
+    "timestamp": "2026-02-17T18:29:06.304370",
+    "text": "Событие: Mentor холодно поздоровался с Алисой | Ответ: Здравствуйте! Как прошел ваш день?",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "6a086b76",
+    "timestamp": "2026-02-17T18:29:50.955581",
+    "text": "Событие: Ты видишь Боб | Ответ: ",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  },
+  {
+    "id": "297ede5b",
+    "timestamp": "2026-02-17T18:31:11.900046",
+    "text": "Событие: Ты видишь Mentor | Ответ: Мне нужно время, чтобы разобраться.",
+    "emotion": "neutral",
+    "importance": 0.5,
+    "metadata": {}
+  }
+]
