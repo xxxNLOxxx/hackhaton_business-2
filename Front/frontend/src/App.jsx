@@ -1,289 +1,306 @@
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import CreateAgentForm from './components/CreateAgentFrom';
 import AgentCard from './components/AgentCard';
 import RelationshipGraph from './components/RelationshipGraph';
-import { Activity, Zap, Terminal, Users } from 'lucide-react';
+import { Activity, Zap, Terminal, Users, LogOut, Power } from 'lucide-react';
 import Auth from './components/Auth';
+import AgentChatController from "./components/AgentChatController.jsx";
 
 const API_URL = "http://127.0.0.1:8000";
 
+// --- КОМПОНЕНТ АДМИН-ПАНЕЛИ ---
 function UsersAdminPanel({ users, onDeleteUser, currentUserEmail }) {
     return (
-        <div style={{ background: '#111', padding: '20px', borderRadius: '12px', marginTop: '20px' }}>
-            <h3 style={{ color: '#3b82f6' }}>Admin Panel — Users</h3>
-            {users.length === 0 ? <div style={{ color: '#888' }}>Нет пользователей</div> :
-            users.map(u => (
-                <div key={u.email} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '6px 0',
-                    borderBottom: '1px solid #222'
-                }}>
-                    <span>{u.email} ({u.role})</span>
-                    {u.email !== currentUserEmail && (
-                        <button onClick={() => onDeleteUser(u.email)} style={{
-                            background: '#ef4444',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '6px',
-                            padding: '4px 8px',
-                            cursor: 'pointer'
-                        }}>Удалить</button>
-                    )}
-                </div>
-            ))}
+        <div style={{
+            background: 'rgba(239, 68, 68, 0.05)',
+            padding: '20px',
+            borderRadius: '16px',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            marginTop: 'auto'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', color: '#ef4444' }}>
+                <Users size={18} /> <span style={{ fontWeight: 'bold' }}>Control Panel (Admin)</span>
+            </div>
+            <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {users.map(u => (
+                    <div key={u.email} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '8px 12px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px', fontSize: '13px'
+                    }}>
+                        <span style={{ color: u.role === 'admin' ? '#ef4444' : '#fff' }}>{u.email}</span>
+                        {u.email !== currentUserEmail && (
+                            <button
+                                onClick={() => onDeleteUser(u.email)}
+                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                            >
+                                Удалить
+                            </button>
+                        )}
+                    </div>
+                ))}
+            </div>
         </div>
-    )
+    );
 }
 
-
+// --- ОСНОВНОЕ ПРИЛОЖЕНИЕ ---
 function App() {
     const [agents, setAgents] = useState({});
     const [events, setEvents] = useState([]);
     const [graphData, setGraphData] = useState({ nodes: [], links: [] });
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(localStorage.getItem('user_email'));
     const [loading, setLoading] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [users, setUsers] = useState([]);
+    const [autonomousMode, setAutonomousMode] = useState(true); // ✅ Состояние для автономного режима
 
-    const loadData = async (email) => {
-        setLoading(true);
+    // ✅ Функция для переключения автономного режима
+    const toggleAutonomousMode = async () => {
         try {
-            const agentsRes = await axios.get(`${API_URL}/me/agents`, { headers: { email } });
+            const res = await axios.post(`${API_URL}/autonomous-mode/toggle`);
+            setAutonomousMode(res.data.enabled);
+        } catch (err) {
+            console.error("Toggle autonomous mode error:", err);
+        }
+    };
+
+    const loadData = useCallback(async (email, silent = false) => {
+        if (!silent) setLoading(true);
+        try {
+            const headers = { email };
+            const [agentsRes, eventsRes, graphRes, autonomousRes] = await Promise.all([
+                axios.get(`${API_URL}/me/agents`, { headers }),
+                axios.get(`${API_URL}/me/events`, { headers }),
+                axios.get(`${API_URL}/me/graph`, { headers }),
+                axios.get(`${API_URL}/autonomous-mode`) // ✅ Загружаем статус
+            ]);
+
             const agentsObj = Array.isArray(agentsRes.data)
                 ? Object.fromEntries(agentsRes.data.map(a => [a.id, a]))
                 : {};
+
             setAgents(agentsObj);
-
-            const [eventsRes, graphRes] = await Promise.all([
-                axios.get(`${API_URL}/me/events`, { headers: { email } }),
-                axios.get(`${API_URL}/me/graph`, { headers: { email } })
-            ]);
-
             setEvents(eventsRes.data);
             setGraphData(graphRes.data);
+            setAutonomousMode(autonomousRes.data.enabled); // ✅ Устанавливаем статус
 
-            // Проверка роли админа
-            try {
-                const res = await axios.get(`${API_URL}/admin/users`, { headers: { email } });
-                if (res.data && Array.isArray(res.data)) {
-                    setIsAdmin(true);
+            if (!isAdmin) {
+                try {
+                    const res = await axios.get(`${API_URL}/admin/users`, { headers });
                     setUsers(res.data);
+                    setIsAdmin(true);
+                } catch {
+                    setIsAdmin(false);
                 }
-            } catch {
-                setIsAdmin(false);
             }
-
         } catch (err) {
-            console.error("API Error:", err);
+            console.error("Fetch Error:", err);
+            if (err.response?.status === 401) handleLogout();
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
-    };
+    }, [isAdmin]);
 
-    if (!user) {
-        return <Auth onLogin={(email) => {
-            setUser(email);
-            loadData(email);
-        }} />;
-    }
-
-    if (loading) {
-        return <div style={{ color: '#fff', textAlign: 'center', marginTop: '100px' }}>Загрузка данных...</div>;
-    }
-
-    const handleGlobalInject = async () => {
-        const event = prompt("Введите глобальное событие для всех агентов:");
-        if (!event) return;
-
-        try {
-            await axios.post(`${API_URL}/inject-event`, null, {
-                headers: { email: user },
-                params: { event }
-            });
+    useEffect(() => {
+        if (user) {
             loadData(user);
-        } catch (err) {
-            alert("Ошибка отправки глобального события");
-            console.error(err);
+            const interval = setInterval(() => loadData(user, true), 3000);
+            return () => clearInterval(interval);
         }
+    }, [user, loadData]);
+
+    const handleLogin = (email) => {
+        localStorage.setItem('user_email', email);
+        setUser(email);
     };
 
     const handleLogout = () => {
+        localStorage.removeItem('user_email');
         setUser(null);
         setAgents({});
         setEvents([]);
-        setGraphData({ nodes: [], links: [] });
         setIsAdmin(false);
-        setUsers([]);
     };
 
-    const handleInteract = async (id) => {
-        const event = prompt(`Прямое обращение к ${agents[id]?.name || id}:`);
-        if (!event) return;
+    // --- МЕТОДЫ ДЛЯ РАБОТЫ С АГЕНТАМИ ---
+    const handleInteract = async (agentId) => {
+        const text = prompt(`Введите сообщение для ${agents[agentId]?.name || 'агента'}:`);
+        if (!text) return;
 
         try {
-            await axios.post(
-                `${API_URL}/interact/${id}`,
-                { event, initiator_id: "user" },
+            await axios.post(`${API_URL}/interact/${agentId}`,
+                { event: text, initiator_id: "user" },
                 { headers: { email: user } }
             );
-            loadData(user);
+            // Обновляем данные (график, логи, состояние агентов)
+            loadData(user, true);
         } catch (err) {
-            alert("Ошибка взаимодействия");
+            console.error("Interaction error:", err);
+            alert("Ошибка при отправке сообщения агенту");
         }
     };
 
     const handleDeleteAgent = async (agentId) => {
-    if (!window.confirm(`Удалить агента ${agents[agentId].name}?`)) return;
-    try {
-        await axios.delete(`${API_URL}/me/agents/${agentId}`, { headers: { email: user } });
-        
-        // Обновляем локальный стейт агентов
-        const newAgents = { ...agents };
-        delete newAgents[agentId];
-        setAgents(newAgents);
+        if (!window.confirm("Вы уверены, что хотите удалить этого агента?")) return;
 
-        // Перезагружаем граф, чтобы агент исчез
-        const graphRes = await axios.get(`${API_URL}/me/graph`, { headers: { email: user } });
-        setGraphData(graphRes.data);
-
-    } catch (err) {
-        console.error(err);
-        alert("Ошибка удаления агента");
-    }
-};
-
+        try {
+            await axios.delete(`${API_URL}/me/agents/${agentId}`, {
+                headers: { email: user }
+            });
+            // Перезагружаем список, чтобы карточка исчезла
+            loadData(user, true);
+        } catch (err) {
+            console.error("Delete error:", err);
+            alert("Не удалось удалить агента");
+        }
+    };
 
     const handleEditAgent = async (agentId, updates) => {
         try {
-            await axios.put(`${API_URL}/me/agents/${agentId}`, updates, { headers: { email: user } });
-            loadData(user);
+            await axios.put(`${API_URL}/me/agents/${agentId}`, updates, {
+                headers: { email: user }
+            });
+            loadData(user, true);
         } catch (err) {
-            console.error(err);
-            alert("Ошибка изменения агента");
+            console.error("Edit error:", err);
+            alert("Ошибка при обновлении данных агента");
         }
     };
 
-    const handleDeleteUser = async (emailToDelete) => {
-        if (!window.confirm(`Удалить пользователя ${emailToDelete}?`)) return;
-        try {
-            await axios.delete(`${API_URL}/admin/users/${emailToDelete}`, { headers: { email: user } });
-            setUsers(users.filter(u => u.email !== emailToDelete));
-            alert("Пользователь удален");
-        } catch (err) {
-            console.error(err);
-            alert("Ошибка при удалении пользователя");
-        }
-    };
+    if (!user) return <Auth onLogin={handleLogin} />;
 
     return (
         <div style={{
             background: 'radial-gradient(circle at 50% 50%, #11111a 0%, #050505 100%)',
-            height: '100vh',
-            width: '100vw',
-            color: '#fff',
-            fontFamily: "'Inter', sans-serif",
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
+            height: '100vh', width: '100vw', color: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden'
         }}>
+            {/* HEADER */}
             <header style={{
-                height: '75px',
-                padding: '0 40px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                background: 'rgba(10, 10, 10, 0.7)',
-                backdropFilter: 'blur(15px)',
-                borderBottom: '1px solid rgba(59, 130, 246, 0.2)',
-                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.8)'
+                height: '70px', minHeight: '70px', padding: '0 30px', display: 'flex', justifyContent: 'space-between',
+                alignItems: 'center', background: 'rgba(5, 5, 5, 0.8)', backdropFilter: 'blur(10px)',
+                borderBottom: '1px solid rgba(59, 130, 246, 0.3)', zIndex: 10
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <Activity size={20} color="#3b82f6" />
-                    <h1 style={{ fontSize: '1.2rem', fontWeight: '900' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Activity size={24} color="#3b82f6" />
+                    <h1 style={{ fontSize: '1.4rem', fontWeight: '800' }}>
                         CyberLeap <span style={{ color: '#3b82f6' }}>v2.0</span>
                     </h1>
                 </div>
 
-                <button onClick={handleGlobalInject} style={{
-                    background: 'linear-gradient(135deg, #ef4444 0%, #991b1b 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '12px 28px',
-                    borderRadius: '12px',
-                    fontWeight: '900',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontSize: '11px'
-                }}>
-                    <Zap size={16} /> GOD MODE
-                </button>
-
-                <button onClick={handleLogout} style={{
-                    background: 'linear-gradient(135deg, #374151 0%, #111827 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '10px 22px',
-                    borderRadius: '12px',
-                    fontWeight: '900',
-                    cursor: 'pointer',
-                    fontSize: '11px'
-                }}>
-                    Выйти
-                </button>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                     {/* ✅ Кнопка-переключатель автономного режима */}
+                    <button onClick={toggleAutonomousMode} style={{
+                        background: autonomousMode ? '#10b981' : '#333',
+                        color: '#fff', border: 'none', padding: '10px 20px',
+                        borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '8px'
+                    }}>
+                        <Power size={16} />
+                        {autonomousMode ? 'ON' : 'OFF'}
+                    </button>
+                    <button onClick={() => {
+                        const event = prompt("Глобальное событие:");
+                        if(event) axios.post(`${API_URL}/inject-event`, null, {
+                            headers: { email: user }, params: { event }
+                        }).then(() => loadData(user, true));
+                    }} style={{
+                        background: '#ef4444', color: '#fff', border: 'none', padding: '10px 20px',
+                        borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                    }}>
+                        <Zap size={16} /> GOD MODE
+                    </button>
+                    <button onClick={handleLogout} style={{ background: '#222', color: '#fff', border: '1px solid #444', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
+                        <LogOut size={18} />
+                    </button>
+                </div>
             </header>
 
-            <main style={{ display: 'flex', flex: 1, padding: '25px', gap: '25px' }}>
+            {/* MAIN CONTENT */}
+            <main style={{ display: 'flex', flex: 1, padding: '20px', gap: '20px', overflow: 'hidden' }}>
+
+                {/* ✅ ЛЕВАЯ ЧАСТЬ С FLEXBOX */}
                 <div style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
-                    gap: '25px'
+                    flex: 1, overflowY: 'auto', display: 'flex',
+                    flexWrap: 'wrap', alignContent: 'flex-start',
+                    gap: '20px', paddingRight: '10px'
                 }}>
+                    <div style={{ flexBasis: '320px', flexGrow: 1 }}>
+                         <CreateAgentForm onCreated={() => loadData(user, true)} />
+                    </div>
                     {Object.entries(agents).map(([id, agent]) => (
-                        <AgentCard
-                            key={id}
-                            id={id}
-                            agent={agent}
-                            onInteract={handleInteract}
-                            onDelete={() => handleDeleteAgent(id)}
-                            onEdit={(updates) => handleEditAgent(id, updates)}
-                        />
+                        <div key={id} style={{ flexBasis: '320px', flexGrow: 1 }}>
+                            <AgentCard
+                                id={id}
+                                agent={agent}
+                                onInteract={() => handleInteract(id)}
+                                onDelete={() => handleDeleteAgent(id)}
+                                onEdit={(updates) => handleEditAgent(id, updates)}
+                            />
+                        </div>
                     ))}
-                    <CreateAgentForm onCreated={() => loadData(user)} />
                 </div>
 
-                <aside style={{ width: '450px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
-                    <div style={{ background: '#080808', padding: '20px', borderRadius: '16px' }}>
-                        <Users size={16} color="#3b82f6" /> Graph 
+                {/* ПРАВАЯ ЧАСТЬ (САЙДБАР) — СКРОЛЛИТСЯ ЦЕЛИКОМ ЕСЛИ НУЖНО */}
+                <aside style={{
+                    width: '400px', minWidth: '400px', display: 'flex', flexDirection: 'column',
+                    gap: '20px', height: '100%', overflowY: 'auto', paddingRight: '5px'
+                }}>
+                    {/* ГРАФ */}
+                    <div style={{ background: 'rgba(15, 15, 20, 0.5)', padding: '20px', borderRadius: '16px', border: '1px solid #222' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', color: '#3b82f6' }}>
+                            <Users size={18} /> <span style={{ fontWeight: 'bold' }}>Social Graph</span>
+                        </div>
                         <RelationshipGraph data={graphData} />
                     </div>
 
-                    <div style={{ background: '#080808', padding: '20px', borderRadius: '16px', flex: 1, overflowY: 'auto' }}>
-                        <Terminal size={16} color="#3b82f6" /> Events 
-                        {events.length === 0 ? (
-                            <div style={{ color: '#555', marginTop: '10px' }}>Нет событий</div>
-                        ) : (
-                            <div style={{ marginTop: '10px', maxHeight: '400px', overflowY: 'auto' }}>
-                                {events.map((e, i) => (
-                                    <div key={i} style={{ marginBottom: '8px', borderBottom: '1px solid #222', paddingBottom: '4px' }}>
-                                        <span style={{ color: '#888', fontSize: '10px' }}>{e.time}</span> — 
-                                        <strong>{e.actor}</strong>: {e.text}
+                    <AgentChatController
+                        agents={agents}
+                        onUpdate={() => loadData(user, true)}
+                    />
+
+                    {/* СОБЫТИЯ — РАСТЯГИВАЮТСЯ ПО ВЕРТИКАЛИ */}
+                    <div style={{
+                        background: 'rgba(15, 15, 20, 0.5)', padding: '20px', borderRadius: '16px',
+                        border: '1px solid #222', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '300px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', color: '#10b981' }}>
+                            <Terminal size={18} /> <span style={{ fontWeight: 'bold' }}>Live Events</span>
+                        </div>
+                        <div id="event-log" style={{ flex: 1, overflowY: 'auto', fontSize: '13px' }}>
+                            {events.slice().reverse().map((e, i) => (
+                                <div key={i} style={{ padding: '10px', borderBottom: '1px solid #1a1a1a', animation: 'fadeIn 0.3s' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                        <span style={{ color: e.type === 'world' ? '#ef4444' : '#3b82f6', fontWeight: 'bold' }}>{e.actor}</span>
+                                        <span style={{ color: '#555', fontSize: '11px' }}>{e.time}</span>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                    <div style={{ color: '#ccc', lineHeight: '1.4' }}>{e.text}</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    {isAdmin && <UsersAdminPanel users={users} onDeleteUser={handleDeleteUser} currentUserEmail={user} />}
-
+                    {/* АДМИН ПАНЕЛЬ */}
+                    {isAdmin && (
+                        <UsersAdminPanel
+                            users={users}
+                            currentUserEmail={user}
+                            onDeleteUser={async (targetEmail) => {
+                                if(!window.confirm(`Удалить ${targetEmail}?`)) return;
+                                await axios.delete(`${API_URL}/admin/users/${targetEmail}`, { headers: { email: user } });
+                                loadData(user, true);
+                            }}
+                        />
+                    )}
                 </aside>
             </main>
+
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+                ::-webkit-scrollbar { width: 5px; }
+                ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+                #event-log { scroll-behavior: smooth; }
+            `}</style>
         </div>
     );
 }

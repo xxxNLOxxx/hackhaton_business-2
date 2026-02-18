@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Zap, ChevronDown, ChevronUp, Brain, Target, Activity } from 'lucide-react';
+import { User, Zap, ChevronDown, ChevronUp, Brain, Target, Activity, Smile, Frown } from 'lucide-react';
 
 const AgentCard = ({ id, agent, onInteract, onDelete, onEdit }) => {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -7,7 +7,7 @@ const AgentCard = ({ id, agent, onInteract, onDelete, onEdit }) => {
     
     const agentColor = agent.color || '#3b82f6';
     const moodPercent = ((agent.mood + 1) / 2) * 100;
-    const moodColor = agent.mood > 0 ? '#4ade80' : '#f87171';
+    const moodColor = agent.mood > 0 ? '#4ade80' : (agent.mood < 0 ? '#f87171' : '#9ca3af');
 
     const handleButtonClick = (e) => {
         e.stopPropagation();
@@ -84,10 +84,30 @@ const AgentCard = ({ id, agent, onInteract, onDelete, onEdit }) => {
             </div>
 
             {/* Био */}
-            <div style={{ ...sectionStyle, borderLeft: `3px solid ${agentColor}` }}>
+            <div style={{ ...sectionStyle, borderLeft: `3px solid ${agentColor}`, marginTop: '20px' }}>
                 <p style={{ margin: 0, fontSize: '13px', color: '#ccc', lineHeight: '1.5' }}>
                     {agent.bio}
                 </p>
+            </div>
+
+            {/* Шкала настроения */}
+            <div style={{ ...sectionStyle, marginTop: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {agent.mood > 0 ? <Smile size={14} color={moodColor} /> : <Frown size={14} color={moodColor} />}
+                        <span style={{ color: '#aaa', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}>Настроение</span>
+                    </div>
+                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: moodColor }}>{agent.mood.toFixed(2)}</span>
+                </div>
+                <div style={{ background: '#333', borderRadius: '5px', height: '6px', width: '100%', overflow: 'hidden' }}>
+                    <div style={{
+                        width: `${moodPercent}%`,
+                        height: '100%',
+                        background: moodColor,
+                        borderRadius: '5px',
+                        transition: 'width 0.5s ease, background-color 0.5s ease'
+                    }} />
+                </div>
             </div>
 
             {/* Развернутый блок */}

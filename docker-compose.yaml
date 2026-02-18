@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./Backend
+    container_name: cyberleap-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Backend/agents.json:/app/agents.json
+      - ./Backend/users.json:/app/users.json
+      - ./Backend/memory_storage:/app/memory_storage
+    env_file:
+      - ./Backend/.env
+    restart: always
+
+  frontend:
+    build: ./Front/frontend
+    container_name: cyberleap-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    stdin_open: true
+    tty: true
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    restart: always

@@ -1,1 +1,7 @@
-../.env
+venv/
+__pycache__/
+*.pyc
+.env
+agents.json
+event_log.json
+../memory_storage/

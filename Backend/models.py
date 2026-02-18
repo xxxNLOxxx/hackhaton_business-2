@@ -1,12 +1,18 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import List, Optional
-from uuid import uuid4
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, EmailStr
+from typing import Optional, List
+
+# ✅ Очередь для диалогов, инициированных пользователем
+DIALOGUE_PRIORITY_QUEUE: List = []
+
+# Переменная состояния для автономного режима
+AUTONOMOUS_MODE_ENABLED = True
+
 
 class InteractionRequest(BaseModel):
     event: str
     initiator_id: Optional[str] = "user"
+    is_observer_event: bool = False
+    is_manual_override: bool = False  # ✅ Флаг для ручного управления
 
 
 class CreateAgentRequest(BaseModel):
@@ -22,30 +28,14 @@ class AgentResponse(BaseModel):
     internal_monologue: str
     goal: str
     message: str
-    new_mood: float      # ДЕЛЬТА
+    new_mood: float
     action: str
     rel_change: float
     style_suffix: str
 
 
 class User(BaseModel):
-    id: str = None
+    id: Optional[str] = None
     email: EmailStr
     password: str
     role: str = "user"
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        if not self.id:
-            self.id = str(uuid4())
-class UpdateUserRequest(BaseModel):
-    role: Optional[str] = None
-    password: Optional[str] = None
-
-
-class UpdateAgentRequest(BaseModel):
-    name: Optional[str] = None
-    bio: Optional[str] = None
-    mood: Optional[float] = None
-    color: Optional[str] = None
-    current_goal: Optional[str] = None

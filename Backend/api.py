@@ -1,10 +1,9 @@
-# api.py
 import datetime
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import Dict
 from agent_manager import AgentManager
-from models import InteractionRequest, AgentResponse, CreateAgentRequest
+import models # ✅ Импортируем модуль models
 from engine_gigachat import get_ai_decision
 from user_manager import UserManager
 from long_term_memory import LongTermMemory
@@ -20,37 +19,28 @@ memories: Dict[str, LongTermMemory] = {}
 def clamp(v: float) -> float:
     return round(max(-1.0, min(1.0, v)), 2)
 
-
 def sync_agent_relationships(owner_email: str):
     user_agents = agent_manager.get_agents_by_owner(owner_email)
     for a in user_agents:
         for b in user_agents:
             if a["id"] != b["id"]:
                 a["relationships"].setdefault(b["id"], 0.0)
-    # СОХРАНЕНИЕ УЖЕ ПРОИСХОДИТ В agent_manager
-
 
 def ensure_same_owner(agent_id: str, email: str) -> Dict:
     agent = agent_manager.get_agent(agent_id)
-    if not agent:
-        raise HTTPException(404, "Agent not found")
-    if agent["owner_email"] != email:
-        raise HTTPException(403, "Forbidden")
+    if not agent: raise HTTPException(404, "Agent not found")
+    if agent["owner_email"] != email: raise HTTPException(403, "Forbidden")
     return agent
 
-
-def handle_interaction(agent_id: str, req: InteractionRequest, email: str) -> AgentResponse:
+def handle_interaction(agent_id: str, req: models.InteractionRequest, email: str) -> models.AgentResponse:
     agent = ensure_same_owner(agent_id, email)
 
-    data_dict = get_ai_decision(agent, req.event)
-    data_dict["agent_id"] = agent_id
-    data = AgentResponse(**data_dict)
+    data_dict = get_ai_decision(agent, req.event, req.is_observer_event)
+    data = models.AgentResponse(**data_dict)
 
-    # обновляем настроение и цель
     agent["mood"] = clamp(agent["mood"] + data.new_mood)
     agent["current_goal"] = data.goal
 
-    # безопасное обновление отношений
     if req.initiator_id != "user":
         initiator_agent = agent_manager.get_agent(req.initiator_id)
         if initiator_agent and initiator_agent["owner_email"] == email:
@@ -58,257 +48,95 @@ def handle_interaction(agent_id: str, req: InteractionRequest, email: str) -> Ag
                 agent["relationships"].get(req.initiator_id, 0.0) + data.rel_change
             )
 
-    # история
     agent["history"].append(req.event)
     agent["history"] = agent["history"][-20:]
 
-    # глобальный лог
-    event_log.append({
-        "time": datetime.datetime.now().strftime("%H:%M:%S"),
-        "type": "agent" if req.initiator_id != "user" else "system",
-        "actor": agent["id"],
-        "text": data.message,
-        "mood": agent["mood"],
-        "owner_email": agent["owner_email"]
-    })
-    event_log[:] = event_log[-200:]
+    if data.message:
+        event_log.append({
+            "time": datetime.datetime.now().strftime("%H:%M:%S"), "type": "agent",
+            "actor": agent["id"], "text": data.message, "mood": agent["mood"],
+            "owner_email": agent["owner_email"]
+        })
+        event_log[:] = event_log[-200:]
 
-    # долговременная память
     if agent_id not in memories:
         memories[agent_id] = LongTermMemory(agent_id)
 
     memories[agent_id].add_memory(
         text=f"Событие: {req.event} | Ответ: {data.message}",
-        emotion="neutral",
-        importance=0.5
+        emotion="neutral", importance=0.5
     )
 
-    # сохраняем агента (update_agent САМ сохраняет)
     agent_manager.update_agent(agent_id, **agent)
-
     return data
-def ensure_user(email: str):
-    if not user_manager.get_user_by_email(email):
-        raise HTTPException(401, "Unauthorized")
-
-
-def ensure_admin(email: str):
-    user = user_manager.get_user_by_email(email)
-    if not user or user.role != "admin":
-        raise HTTPException(403, "Admin only")
 
 # ------------------ API ------------------
 
-@router.post("/interact/{agent_id}", response_model=AgentResponse)
-async def interact(agent_id: str, req: InteractionRequest, email: str = Header(...)):
-    return handle_interaction(agent_id, req, email)
+@router.get("/autonomous-mode")
+def get_autonomous_mode_status():
+    return {"enabled": models.AUTONOMOUS_MODE_ENABLED}
 
+@router.post("/autonomous-mode/toggle")
+def toggle_autonomous_mode():
+    models.AUTONOMOUS_MODE_ENABLED = not models.AUTONOMOUS_MODE_ENABLED
+    return {"enabled": models.AUTONOMOUS_MODE_ENABLED}
+
+@router.post("/interact/{agent_id}", response_model=models.AgentResponse)
+async def interact(agent_id: str, req: models.InteractionRequest, email: str = Header(...)):
+    return handle_interaction(agent_id, req, email)
 
 class AuthRequest(BaseModel):
     email: str
     password: str
 
-
 @router.post("/register")
 def register(req: AuthRequest):
-    try:
-        user = user_manager.register_user(req.email, req.password)
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-
+    user = user_manager.register_user(req.email, req.password)
     for base in ["mentor", "critic"]:
         agent_id = f"{user.email}_{base}"
         agent_manager.add_agent({
-            "id": agent_id,
-            "name": base.capitalize(),
-            "bio": "Системный агент",
-            "mood": 0.0,
-            "color": "#888888",
-            "relationships": {},
-            "history": [],
-            "current_goal": "Инициализация",
-            "owner_email": user.email
+            "id": agent_id, "name": base.capitalize(), "bio": "Системный агент",
+            "mood": 0.0, "color": "#888888", "relationships": {},
+            "history": [], "current_goal": "Инициализация", "owner_email": user.email
         })
-
     sync_agent_relationships(user.email)
     return {"email": user.email}
-
 
 @router.post("/login")
 def login(req: AuthRequest):
     user = user_manager.login_user(req.email, req.password)
-    if not user:
-        raise HTTPException(401, "Invalid credentials")
-
-    for base in ["mentor", "critic"]:
-        agent_id = f"{user.email}_{base}"
-        if not agent_manager.get_agent(agent_id):
-            agent_manager.add_agent({
-                "id": agent_id,
-                "name": base.capitalize(),
-                "bio": "Системный агент",
-                "mood": 0.0,
-                "color": "#888888",
-                "relationships": {},
-                "history": [],
-                "current_goal": "Инициализация",
-                "owner_email": user.email
-            })
-
+    if not user: raise HTTPException(401, "Invalid credentials")
     sync_agent_relationships(user.email)
     return {"email": user.email}
 
-
 @router.post("/me/agents")
-def create_agent(req: CreateAgentRequest, email: str = Header(...)):
+def create_agent(req: models.CreateAgentRequest, email: str = Header(...)):
     agent_id = f"{email}_{req.id}"
-    if agent_manager.get_agent(agent_id):
-        raise HTTPException(400, "Agent exists")
-
+    if agent_manager.get_agent(agent_id): raise HTTPException(400, "Agent exists")
     agent_manager.add_agent({
-        "id": agent_id,
-        "name": req.name,
-        "bio": req.bio,
-        "mood": clamp(req.mood),
-        "color": req.color,
-        "relationships": {},
-        "history": [],
-        "current_goal": "Инициализация",
-        "owner_email": email
+        "id": agent_id, "name": req.name, "bio": req.bio, "mood": clamp(req.mood),
+        "color": req.color, "relationships": {}, "history": [],
+        "current_goal": "Инициализация", "owner_email": email
     })
-
     sync_agent_relationships(email)
     memories[agent_id] = LongTermMemory(agent_id)
     return agent_manager.get_agent(agent_id)
 
-
 @router.get("/me/agents")
 def get_my_agents(email: str = Header(...)):
-    if not user_manager.get_user_by_email(email):
-        raise HTTPException(401, "Unauthorized")
     return agent_manager.get_agents_by_owner(email)
-
-
-@router.post("/inject-event")
-def inject_event(event: str, email: str = Header(...)):
-    if not user_manager.get_user_by_email(email):
-        raise HTTPException(401, "Unauthorized")
-
-    # Добавляем событие в глобальный лог
-    event_log.append({
-        "time": datetime.datetime.now().strftime("%H:%M:%S"),
-        "type": "world",
-        "actor": "environment",
-        "text": event,
-        "mood": 0,
-        "owner_email": email
-    })
-
-    # Пробегаем всех агентов и добавляем событие в их историю
-    for agent in agent_manager.agents.values():
-        # можно ограничить только своими агентами или всеми
-        agent["history"].append(event)
-        agent["history"] = agent["history"][-20:]  # сохраняем только последние 20
-
-    # Сохраняем изменения
-    agent_manager._save_agents()
-
-    return {"status": "ok"}
-
-
 
 @router.get("/me/events")
 def get_events(email: str = Header(...)):
-    if not user_manager.get_user_by_email(email):
-        raise HTTPException(401, "Unauthorized")
     return [e for e in event_log if e.get("owner_email") == email][-100:]
-
 
 @router.get("/me/graph")
 def get_graph(email: str = Header(...)):
-    if not user_manager.get_user_by_email(email):
-        raise HTTPException(401, "Unauthorized")
-
     user_agents = agent_manager.get_agents_by_owner(email)
     nodes = [{"id": a["id"], "name": a["name"], "color": a["color"]} for a in user_agents]
-
     links = []
     for a in user_agents:
         for b_id, rel in a["relationships"].items():
             if any(b["id"] == b_id for b in user_agents):
-                links.append({
-                    "source": a["id"],
-                    "target": b_id,
-                    "value": rel
-                })
-
+                links.append({"source": a["id"], "target": b_id, "value": rel})
     return {"nodes": nodes, "links": links}
-@router.get("/admin/users")
-def admin_get_users(email: str = Header(...)):
-    ensure_admin(email)
-    return [
-        {
-            "email": u.email,
-            "role": u.role
-        }
-        for u in user_manager.users.values()
-    ]
-
-class UpdateUserRequest(BaseModel):
-    role: str | None = None
-    password: str | None = None
-
-
-@router.put("/admin/users/{user_email}")
-def admin_update_user(
-    user_email: str,
-    req: UpdateUserRequest,
-    email: str = Header(...)
-):
-    ensure_admin(email)
-    user_manager.update_user(
-        user_email,
-        role=req.role,
-        password=req.password
-    )
-    return {"status": "ok"}
-@router.delete("/admin/users/{user_email}")
-def admin_delete_user(user_email: str, email: str = Header(...)):
-    ensure_admin(email)
-
-    agent_manager.delete_agents_by_owner(user_email)
-    user_manager.delete_user(user_email)
-
-    return {"status": "deleted"}
-class UpdateAgentRequest(BaseModel):
-    name: str | None = None
-    bio: str | None = None
-    mood: float | None = None
-    color: str | None = None
-    current_goal: str | None = None
-
-
-@router.put("/me/agents/{agent_id}")
-def update_my_agent(
-    agent_id: str,
-    req: UpdateAgentRequest,
-    email: str = Header(...)
-):
-    ensure_user(email)
-    agent = agent_manager.get_agent(agent_id)
-
-    if not agent or agent["owner_email"] != email:
-        raise HTTPException(403, "Forbidden")
-
-    agent_manager.update_agent(agent_id, **req.dict(exclude_none=True))
-    return {"status": "ok"}
-@router.delete("/me/agents/{agent_id}")
-def delete_my_agent(agent_id: str, email: str = Header(...)):
-    ensure_user(email)
-    agent = agent_manager.get_agent(agent_id)
-
-    if not agent or agent["owner_email"] != email:
-        raise HTTPException(403, "Forbidden")
-
-    agent_manager.delete_agent(agent_id)
-    return {"status": "deleted"}
