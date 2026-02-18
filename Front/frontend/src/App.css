@@ -1,0 +1,12 @@
+/* Очищаем дефолтные стили Vite */
+#root {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+
+/* Добавим эффект свечения для карточек при наведении */
+.agent-card-hover:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+}

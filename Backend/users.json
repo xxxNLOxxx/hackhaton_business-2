@@ -1,0 +1,14 @@
+{
+  "nastya@mail.ru": {
+    "id": "3627e149-6f8d-4ec3-b9d6-5d9348914af1",
+    "email": "nastya@mail.ru",
+    "password": "26d72e99775e03d2501416c6f402c265e628b7d02eee17a7671563c32e0cd9a3",
+    "role": "user"
+  },
+  "admin@gmail.com": {
+    "id": "d8f411d7-2db0-49bc-932b-bac8f2038919",
+    "email": "admin@gmail.com",
+    "password": "0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c",
+    "role": "admin"
+  }
+}
